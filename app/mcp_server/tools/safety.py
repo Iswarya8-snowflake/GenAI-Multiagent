@@ -140,3 +140,4 @@ def sanitize_web_text(html: str) -> str:
     text = re.sub(r"\n\s*\n+", "\n\n", text).strip()
 
     return text
+

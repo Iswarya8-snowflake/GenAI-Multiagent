@@ -6,6 +6,7 @@ langchain
 langchain-community
 langchain-core
 langchain-ollama
+mcp
 pydantic
 pytest
 python-dotenv

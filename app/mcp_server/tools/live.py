@@ -46,3 +46,4 @@ def tail_log(service: str, lines: int = 50) -> Dict[str, Any]:
         resp = client.get(url, params=params)
         resp.raise_for_status()
         return resp.json()
+

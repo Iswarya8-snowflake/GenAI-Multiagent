@@ -204,3 +204,4 @@ class SimulationEngine:
 
 # Global simulator engine instance
 engine = SimulationEngine()
+

@@ -134,3 +134,4 @@ def lookup_signature(sig: str, incidents_file: str = "data/incidents.json") -> L
 
     matches.sort(key=lambda x: x["score"], reverse=True)
     return [m["incident"] for m in matches[:5]]
+

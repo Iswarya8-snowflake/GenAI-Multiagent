@@ -81,3 +81,4 @@ def search_wiki(query: str, root_dirs: List[str] = None) -> List[Dict[str, Any]]
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results
+

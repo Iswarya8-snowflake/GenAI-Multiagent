@@ -40,3 +40,4 @@ A multi-agent copilot that triages L3 support incidents using RAG over runbooks,
 - Generated synthetic dataset: 6 runbooks, 25 past incidents, 4 error logs, and 15 evaluation questions.
 - Built FAISS knowledge base index with Ollama `nomic-embed-text` embeddings (`scripts/build_index.py`), created KB search and upsert tool (`app/mcp_server/tools/kb.py`), and verified 100% retrieval hit rate @ 3 on evaluation test set (`scripts/eval_retrieval.py`).
 - Built tools suite without LLM/network (`safety.py`, `logs.py`, `wiki.py`, `tickets.py`, `live.py`), developed FastAPI monitoring simulator (`app/sim`), and verified all 8 unit tests in `tests/test_tools.py`.
+- Implemented FastMCP server (`app/mcp_server/server.py`) over streamable HTTP on port 8765 registering all 17 specification tools, and verified end-to-end communication, live alert querying, log parsing, and approval gate enforcement via `scripts/mcp_smoke_test.py`.

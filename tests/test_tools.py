@@ -297,3 +297,4 @@ def test_simulator_endpoints_and_scenario():
     client.post("/scenario/reset")
     fresh_health = client.get("/services/health").json()
     assert fresh_health["services"]["orders-db"] == "HEALTHY"
+
