@@ -71,7 +71,20 @@ class ResolutionPlan(BaseModel):
 
 class IncidentState(TypedDict, total=False):
     incident_text: str
+    logs: Optional[str]
     triage: Optional[Dict[str, Any]]
+    kb_docs: Optional[List[Dict[str, Any]]]
+    log_findings: Optional[Dict[str, Any]]
+    live_findings: Optional[Dict[str, Any]]
     evidence: Optional[List[Dict[str, Any]]]
+    loops: int
+    refined_query: Optional[str]
     plan: Optional[Dict[str, Any]]
+    review: Optional[Dict[str, Any]]
+    policy: Optional[Dict[str, Any]]
+    approved: Optional[bool]
+    approval_id: Optional[str]
+    ticket: Optional[Dict[str, Any]]
+    kb_writeback_result: Optional[Dict[str, Any]]
+    status: Optional[str]
     error: Optional[str]

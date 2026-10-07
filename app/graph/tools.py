@@ -115,3 +115,8 @@ async def call_mcp_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
     raw_res = await tool.ainvoke(arguments)
     return unpack_tool_result(raw_res)
 
+
+def call_mcp_tool_sync(tool_name: str, arguments: Dict[str, Any]) -> Any:
+    """Synchronous wrapper to call an MCP tool by name and return unpacked results."""
+    return asyncio.run(call_mcp_tool(tool_name, arguments))
+
