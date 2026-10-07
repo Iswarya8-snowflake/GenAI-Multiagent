@@ -195,3 +195,4 @@ def save_app_knowledge(
         "version": new_version,
         "updated": now_str,
     }
+

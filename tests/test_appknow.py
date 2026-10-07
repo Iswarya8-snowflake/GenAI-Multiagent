@@ -204,3 +204,4 @@ def test_save_app_knowledge_version_increment_and_history(mock_kb, tmp_path):
     assert unknown["exists"] is False
     assert unknown["version"] == 0
     assert unknown["markdown"] == ""
+
