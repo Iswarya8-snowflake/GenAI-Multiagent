@@ -1,0 +1,7 @@
+2026-10-06 08:00:15 INFO orders-db - Database engine initialized on port 5432
+2026-10-06 08:01:22 INFO orders-db - Active client connections: 42
+2026-10-06 08:02:45 WARN orders-db - Transaction 89201 waiting on row lock in table orders
+2026-10-06 08:03:35 ERROR orders-db - [DB-1205] Lock wait timeout exceeded on transaction 89201; try restarting transaction
+2026-10-06 08:03:36 ERROR orders-db - [DB-1205] Lock wait timeout exceeded for client session 10.0.4.12
+2026-10-06 08:04:00 INFO orders-db - Automatic rollback initiated for transaction 89201
+2026-10-06 08:05:10 INFO orders-db - Database checkpoints written successfully

@@ -1,0 +1,27 @@
+# Secrets & Environment
+.env
+
+# Python Virtual Environments & Cache
+venv/
+venv
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Knowledge Base & Databases
+kb_index/
+kb_index
+data/tickets.db
+
+# Vector DBs & Local Data
+chroma_db/
+.chroma/
+faiss_index/
+data/synthetic/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

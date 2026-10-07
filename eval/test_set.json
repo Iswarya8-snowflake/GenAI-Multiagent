@@ -1,0 +1,92 @@
+[
+  {
+    "id": "TEST-01",
+    "question": "Orders database is throwing lock wait timeout errors during customer checkout transactions. What is the cause and resolution?",
+    "expected_category": "db-lock",
+    "expected_error_code": "DB-1205"
+  },
+  {
+    "id": "TEST-02",
+    "question": "Service orders-db reported DB-1205 with transactions hanging on row locks. How should we triage this?",
+    "expected_category": "db-lock",
+    "expected_error_code": "DB-1205"
+  },
+  {
+    "id": "TEST-03",
+    "question": "Database write queries are failing on orders-db due to uncommitted long-running sessions holding row locks. What steps should be taken?",
+    "expected_category": "db-lock",
+    "expected_error_code": "DB-1205"
+  },
+  {
+    "id": "TEST-04",
+    "question": "Deadlock cycle on inventory table causing DB-1205 lock wait exceeded on orders-db. How to resolve?",
+    "expected_category": "db-lock",
+    "expected_error_code": "DB-1205"
+  },
+  {
+    "id": "TEST-05",
+    "question": "Message queue consumer lag exceeded threshold on orders.inbound topic with alert MQ-2041. What is the fix?",
+    "expected_category": "queue-backlog",
+    "expected_error_code": "MQ-2041"
+  },
+  {
+    "id": "TEST-06",
+    "question": "Service msg-queue is reporting MQ-2041 and downstream consumers have crashed. How do we recover?",
+    "expected_category": "queue-backlog",
+    "expected_error_code": "MQ-2041"
+  },
+  {
+    "id": "TEST-07",
+    "question": "A massive spike in unprocessed events on msg-queue caused severe consumer delay and MQ-2041 warning. What actions to take?",
+    "expected_category": "queue-backlog",
+    "expected_error_code": "MQ-2041"
+  },
+  {
+    "id": "TEST-08",
+    "question": "Poison message stuck on partition 2 causing consumer crash loops and MQ-2041 lag. How to handle this?",
+    "expected_category": "queue-backlog",
+    "expected_error_code": "MQ-2041"
+  },
+  {
+    "id": "TEST-09",
+    "question": "Inbound API gateway feed-gateway is responding with HTTP 503 and reporting FEED-7002 thread pool saturated. How should we mitigate?",
+    "expected_category": "cpu-spike",
+    "expected_error_code": "FEED-7002"
+  },
+  {
+    "id": "TEST-10",
+    "question": "Service feed-gateway CPU utilization reached 100% and logged FEED-7002 error. What are the diagnosis and remediation steps?",
+    "expected_category": "cpu-spike",
+    "expected_error_code": "FEED-7002"
+  },
+  {
+    "id": "TEST-11",
+    "question": "Worker threads exhausted on feed-gateway causing request drops and FEED-7002 errors. How to restore service?",
+    "expected_category": "cpu-spike",
+    "expected_error_code": "FEED-7002"
+  },
+  {
+    "id": "TEST-12",
+    "question": "High connection churn on feed-gateway triggered FEED-7002 thread starvation alert. What is the recommended resolution?",
+    "expected_category": "cpu-spike",
+    "expected_error_code": "FEED-7002"
+  },
+  {
+    "id": "TEST-13",
+    "question": "End of day calculation job aborted on calc-engine with error JOB-5003. How to diagnose and re-run?",
+    "expected_category": "batch-failure",
+    "expected_error_code": "JOB-5003"
+  },
+  {
+    "id": "TEST-14",
+    "question": "Service calc-engine raised JOB-5003 calculation batch failure on batch 4091. What caused this failure?",
+    "expected_category": "batch-failure",
+    "expected_error_code": "JOB-5003"
+  },
+  {
+    "id": "TEST-15",
+    "question": "Scheduled settlement batch failed with JOB-5003 in calc-engine due to data validation error. What is the fix?",
+    "expected_category": "batch-failure",
+    "expected_error_code": "JOB-5003"
+  }
+]

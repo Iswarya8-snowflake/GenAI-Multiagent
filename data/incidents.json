@@ -1,0 +1,227 @@
+[
+  {
+    "id": "INC-101",
+    "category": "db-lock",
+    "symptom": "Orders database write queries timing out with DB-1205 error",
+    "root_cause": "Long-running report transaction held row locks on order_items table",
+    "fix": "Killed blocking session 4821 and enabled query timeout on reporting queries",
+    "owner_team": "database-engineering",
+    "resolution_minutes": 25
+  },
+  {
+    "id": "INC-102",
+    "category": "db-lock",
+    "symptom": "orders-db lock wait timeout during flash sale burst",
+    "root_cause": "Concurrent updates to inventory rows created deadlock cycle",
+    "fix": "Updated update sequence to sort inventory keys before acquisition",
+    "owner_team": "database-engineering",
+    "resolution_minutes": 40
+  },
+  {
+    "id": "INC-103",
+    "category": "db-lock",
+    "symptom": "Checkout service reported DB-1205 lock wait exceeded on orders-db",
+    "root_cause": "Unindexed foreign key check caused full table scan lock",
+    "fix": "Added index on customer_id foreign key column",
+    "owner_team": "database-engineering",
+    "resolution_minutes": 35
+  },
+  {
+    "id": "INC-104",
+    "category": "db-lock",
+    "symptom": "Payment confirmation updates hung waiting for row lock in orders-db",
+    "root_cause": "Stale connection from payment gateway failed to commit transaction",
+    "fix": "Terminated orphaned connection and lowered idle transaction timeout",
+    "owner_team": "database-engineering",
+    "resolution_minutes": 20
+  },
+  {
+    "id": "INC-105",
+    "category": "db-lock",
+    "symptom": "Nightly reconciliation job blocked real-time orders on orders-db",
+    "root_cause": "Reconciliation job ran in READ COMMITTED with exclusive table locks",
+    "fix": "Modified job to run in READ UNCOMMITTED snapshot mode",
+    "owner_team": "database-engineering",
+    "resolution_minutes": 30
+  },
+  {
+    "id": "INC-201",
+    "category": "queue-backlog",
+    "symptom": "msg-queue reported MQ-2041 consumer lag over 50000 messages",
+    "root_cause": "Downstream order consumer workers crashed due to unhandled null payload",
+    "fix": "Patched deserializer with null check and restarted consumer pod replicas",
+    "owner_team": "messaging-platform",
+    "resolution_minutes": 18
+  },
+  {
+    "id": "INC-202",
+    "category": "queue-backlog",
+    "symptom": "Notification events delayed by 45 minutes on msg-queue",
+    "root_cause": "Slow third-party SMS provider API caused consumer thread starvation",
+    "fix": "Enabled asynchronous SMS dispatch and doubled consumer worker count",
+    "owner_team": "messaging-platform",
+    "resolution_minutes": 32
+  },
+  {
+    "id": "INC-203",
+    "category": "queue-backlog",
+    "symptom": "Partition 3 on orders topic stalled with MQ-2041 lag alert",
+    "root_cause": "Poison pill message caused repeated consumer crash loops",
+    "fix": "Skipped offset and forwarded bad message to dead-letter queue",
+    "owner_team": "messaging-platform",
+    "resolution_minutes": 15
+  },
+  {
+    "id": "INC-204",
+    "category": "queue-backlog",
+    "symptom": "msg-queue consumer lag spike after marketing campaign email blast",
+    "root_cause": "Consumer group under-provisioned for 10x traffic spike",
+    "fix": "Scaled consumer deployment from 4 to 16 replicas",
+    "owner_team": "messaging-platform",
+    "resolution_minutes": 22
+  },
+  {
+    "id": "INC-205",
+    "category": "queue-backlog",
+    "symptom": "Billing queue consumer lag triggered MQ-2041 high severity alert",
+    "root_cause": "Database connection pool exhausted in billing consumer process",
+    "fix": "Increased database pool max_connections and restarted consumers",
+    "owner_team": "messaging-platform",
+    "resolution_minutes": 28
+  },
+  {
+    "id": "INC-301",
+    "category": "cpu-spike",
+    "symptom": "feed-gateway throwing HTTP 503 and FEED-7002 thread pool saturated",
+    "root_cause": "Sudden burst of unthrottled requests exhausted Tomcat worker threads",
+    "fix": "Enabled client rate limiting and doubled thread pool capacity",
+    "owner_team": "gateway-platform",
+    "resolution_minutes": 25
+  },
+  {
+    "id": "INC-302",
+    "category": "cpu-spike",
+    "symptom": "feed-gateway CPU hit 99% with elevated request latency",
+    "root_cause": "Catastrophic backtracking in regex validation filter",
+    "fix": "Replaced greedy regex with deterministic string prefix matcher",
+    "owner_team": "gateway-platform",
+    "resolution_minutes": 45
+  },
+  {
+    "id": "INC-303",
+    "category": "cpu-spike",
+    "symptom": "feed-gateway health checks failing during morning traffic ramp",
+    "root_cause": "Downstream pricing service degradation caused thread pool queuing",
+    "fix": "Configured circuit breaker with 2s fallback timeout on pricing client",
+    "owner_team": "gateway-platform",
+    "resolution_minutes": 35
+  },
+  {
+    "id": "INC-304",
+    "category": "cpu-spike",
+    "symptom": "FEED-7002 thread exhaustion reported on feed-gateway pod cluster",
+    "root_cause": "Keep-alive idle connection leak from legacy HTTP/1.0 clients",
+    "fix": "Reduced idle keep-alive timeout to 15 seconds",
+    "owner_team": "gateway-platform",
+    "resolution_minutes": 20
+  },
+  {
+    "id": "INC-305",
+    "category": "cpu-spike",
+    "symptom": "High CPU utilization and dropped packets on feed-gateway edge",
+    "root_cause": "TLS handshake renegotiation loop under heavy connection churn",
+    "fix": "Disabled TLS renegotiation and enabled TLS session caching",
+    "owner_team": "gateway-platform",
+    "resolution_minutes": 30
+  },
+  {
+    "id": "INC-401",
+    "category": "batch-failure",
+    "symptom": "calc-engine aborted nightly settlement batch with JOB-5003 error",
+    "root_cause": "Null currency code in merchant record caused NullPointerException",
+    "fix": "Quarantined record 99201 and re-executed batch pipeline",
+    "owner_team": "batch-analytics",
+    "resolution_minutes": 40
+  },
+  {
+    "id": "INC-402",
+    "category": "batch-failure",
+    "symptom": "JOB-5003 calculation batch failure on batch 104 in calc-engine",
+    "root_cause": "Out of memory error during matrix multiplication on batch data",
+    "fix": "Increased JVM heap limit to 8GB and partitioned calculation into two sub-jobs",
+    "owner_team": "batch-analytics",
+    "resolution_minutes": 50
+  },
+  {
+    "id": "INC-403",
+    "category": "batch-failure",
+    "symptom": "Scheduled risk aggregation job failed at step 4 in calc-engine",
+    "root_cause": "Upstream data feed file was missing required checksum file",
+    "fix": "Regenerated checksum file and retriggered aggregation job",
+    "owner_team": "batch-analytics",
+    "resolution_minutes": 25
+  },
+  {
+    "id": "INC-404",
+    "category": "batch-failure",
+    "symptom": "calc-engine terminated batch calculation due to socket read timeout",
+    "root_cause": "Network partition between calc-engine worker and input storage node",
+    "fix": "Configured retry policy with exponential backoff on data loader client",
+    "owner_team": "batch-analytics",
+    "resolution_minutes": 35
+  },
+  {
+    "id": "INC-405",
+    "category": "batch-failure",
+    "symptom": "Hourly index calculation failed with JOB-5003 code",
+    "root_cause": "Schema mismatch in date format between feed-gateway and calc-engine",
+    "fix": "Added ISO-8601 date parser fallback to calculation ingestion module",
+    "owner_team": "batch-analytics",
+    "resolution_minutes": 30
+  },
+  {
+    "id": "INC-501",
+    "category": "system",
+    "symptom": "Interservice API calls failed with SSL certificate expired error",
+    "root_cause": "Internal ingress TLS certificate expired before renewal job executed",
+    "fix": "Generated new TLS cert, updated Kubernetes secret, and restarted ingress",
+    "owner_team": "cloud-infrastructure",
+    "resolution_minutes": 20
+  },
+  {
+    "id": "INC-502",
+    "category": "system",
+    "symptom": "orders-db pod evicted with disk full alert",
+    "root_cause": "Slow query log grew unchecked filling host root volume",
+    "fix": "Purged old logs, enabled logrotate with 3-day retention, and freed 45GB",
+    "owner_team": "cloud-infrastructure",
+    "resolution_minutes": 15
+  },
+  {
+    "id": "INC-503",
+    "category": "system",
+    "symptom": "Application instances crashed with ENOSPC write error",
+    "root_cause": "Unrotated application logs filled container ephemeral storage",
+    "fix": "Cleaned up /tmp crash dumps and enforced log size capping",
+    "owner_team": "cloud-infrastructure",
+    "resolution_minutes": 18
+  },
+  {
+    "id": "INC-504",
+    "category": "system",
+    "symptom": "TLS handshake failure between feed-gateway and payment gateway",
+    "root_cause": "Intermediate certificate bundle omitted during previous rotation",
+    "fix": "Re-uploaded full certificate chain bundle to secret store",
+    "owner_team": "cloud-infrastructure",
+    "resolution_minutes": 22
+  },
+  {
+    "id": "INC-505",
+    "category": "system",
+    "symptom": "calc-engine worker node disk utilization exceeded 95%",
+    "root_cause": "Failed batch scratch files not cleaned up after job termination",
+    "fix": "Ran scratch cleanup script and added post-exit cleanup hook",
+    "owner_team": "cloud-infrastructure",
+    "resolution_minutes": 14
+  }
+]

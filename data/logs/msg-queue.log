@@ -1,0 +1,7 @@
+2026-10-06 09:15:00 INFO msg-queue - Broker cluster operational across 3 partitions
+2026-10-06 09:16:30 INFO msg-queue - Ingress message rate: 2400 msg/sec on topic orders.inbound
+2026-10-06 09:17:15 WARN msg-queue - Consumer group order-processors reporting high offset delta
+2026-10-06 09:18:02 ERROR msg-queue - [MQ-2041] Consumer lag threshold exceeded on topic orders.inbound partition 2 (lag=52410)
+2026-10-06 09:18:30 ERROR msg-queue - [MQ-2041] Consumer lag critical: consumers unresponsive on partition 2
+2026-10-06 09:19:00 INFO msg-queue - Rebalance requested for consumer group order-processors
+2026-10-06 09:20:15 INFO msg-queue - Partition sync verified
