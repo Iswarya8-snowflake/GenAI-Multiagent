@@ -38,3 +38,4 @@ A multi-agent copilot that triages L3 support incidents using RAG over runbooks,
 ## Development Log
 - Initial project scaffolding created per `PROJECT_SPEC.md`.
 - Generated synthetic dataset: 6 runbooks, 25 past incidents, 4 error logs, and 15 evaluation questions.
+- Built FAISS knowledge base index with Ollama `nomic-embed-text` embeddings (`scripts/build_index.py`), created KB search and upsert tool (`app/mcp_server/tools/kb.py`), and verified 100% retrieval hit rate @ 3 on evaluation test set (`scripts/eval_retrieval.py`).

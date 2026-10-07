@@ -5,3 +5,4 @@
 2026-10-06 09:18:30 ERROR msg-queue - [MQ-2041] Consumer lag critical: consumers unresponsive on partition 2
 2026-10-06 09:19:00 INFO msg-queue - Rebalance requested for consumer group order-processors
 2026-10-06 09:20:15 INFO msg-queue - Partition sync verified
+

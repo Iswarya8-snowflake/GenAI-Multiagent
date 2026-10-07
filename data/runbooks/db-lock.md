@@ -22,3 +22,4 @@
 
 ## Escalation
 - Escalate to the Database Engineering team if lock contention recurs within 15 minutes.
+

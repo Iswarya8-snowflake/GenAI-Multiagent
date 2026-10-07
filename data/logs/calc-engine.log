@@ -5,3 +5,4 @@
 2026-10-06 11:32:51 ERROR calc-engine - [JOB-5003] Calculation batch failure: aborted execution for batch 4091
 2026-10-06 11:33:15 WARN calc-engine - Writing partial intermediate state to scratch volume
 2026-10-06 11:34:00 INFO calc-engine - Batch worker process terminated with exit code 1
+

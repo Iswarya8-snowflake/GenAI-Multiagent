@@ -5,3 +5,4 @@
 2026-10-06 10:12:45 ERROR feed-gateway - [FEED-7002] Thread pool saturated: dropping incoming HTTP connections
 2026-10-06 10:13:30 WARN feed-gateway - Dropped 412 requests due to worker exhaustion
 2026-10-06 10:14:00 INFO feed-gateway - Health check responded with HTTP 503
+
