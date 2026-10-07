@@ -5,6 +5,7 @@ httpx
 langchain
 langchain-community
 langchain-core
+langchain-mcp-adapters
 langchain-ollama
 mcp
 pydantic

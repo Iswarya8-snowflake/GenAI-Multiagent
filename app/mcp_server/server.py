@@ -19,7 +19,7 @@ from app.mcp_server.tools import safety, logs, wiki, tickets, live, kb
 load_dotenv()
 
 # Initialize FastMCP Server
-mcp = FastMCP("L3-Incident-Triage-MCP-Server")
+mcp = FastMCP("L3-Incident-Triage-MCP-Server", host="127.0.0.1", port=8765)
 
 
 # ==============================================================================
@@ -356,9 +356,8 @@ if __name__ == "__main__":
     port = 8765
     path = "/mcp"
     print(f"Starting MCP server on http://{host}:{port}{path} (streamable-http)...")
-    mcp.run(
-        transport="streamable-http",
-        host=host,
-        port=port,
-        streamable_http_path=path,
-    )
+    try:
+        mcp.run(transport="streamable-http")
+    except TypeError:
+        mcp.run(transport="streamable-http", host=host, port=port, streamable_http_path=path)
+
