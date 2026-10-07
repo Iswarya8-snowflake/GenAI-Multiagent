@@ -38,4 +38,23 @@ Approval: every write needs human approval. Strict level (sources must be acknow
 evidence, P1/P2 severity, confidence below 0.7, or a retry.
 Live data: every live response carries as_of, and the UI shows it.
 
+
+## Portal features
+- Two modes: "Investigate an error" (paste or upload an error or log) and "Scan an application"
+  (pick a service, no error needed).
+- Narration: every step is shown as a plain sentence built by code from tool results, never written
+  by the LLM. Only state facts a tool returned. Example: "I checked the application logs: 14 errors,
+  most frequent DB-1205."
+- Related systems: get_service_health returns depends_on and used_by. Live Status checks the component
+  and each dependency and reports status and breached metrics.
+- Application knowledge document: data/app_knowledge/<service>.md with a version and updated date in
+  the header and sections Overview and owner, Dependencies, Known errors (code, meaning, cause, fix,
+  last seen, source), Incident history, Runbook links, Change log.
+- A draft is built during the scan and shown live. It is saved and re-indexed only after human
+  approval, through save_app_knowledge(service, markdown, approval_id). The UI then shows a link to the
+  saved document and its version.
+- New MCP tools: get_app_knowledge(service) (read) and save_app_knowledge(service, markdown,
+  approval_id) (write, approval-gated).
+- Portal pages: Investigate, Live Monitor, Knowledge Library, Tickets, About.
+
 Definition of done for each step: code runs, tests pass, one note added to README, git commit.

@@ -12,3 +12,4 @@ pydantic
 pytest
 python-dotenv
 uvicorn
+sse-starlette
