@@ -36,6 +36,11 @@ from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 from langgraph.types import Command
 
 from app.graph.graph import app as graph_app
+from app.api.narration import narrate
+from app.mcp_server.tools.appknow import (
+    APP_KNOWLEDGE_DIR,
+    get_app_knowledge,
+)
 from app.mcp_server.tools.tickets import (
     get_ticket,
     record_approval,
@@ -99,10 +104,21 @@ investigation_limiter = asyncio.Semaphore(MAX_CONCURRENT_RUNS)
 class IncidentRecord:
     """In-memory representation of an incident workflow."""
 
-    def __init__(self, incident_id: str, incident_text: str, logs: Optional[str] = None):
+    def __init__(
+        self,
+        incident_id: str,
+        incident_text: str,
+        logs: Optional[str] = None,
+        mode: str = "investigate",
+        service: Optional[str] = None,
+    ):
         self.incident_id = incident_id
         self.incident_text = incident_text
         self.logs = logs
+        self.mode = mode
+        self.service = service
+        self.knowledge_draft: Optional[str] = None
+        self.knowledge_saved: Optional[Dict[str, Any]] = None
         self.thread_id = f"thread-{incident_id}"
         self.status = "queued"
         self.created_at = datetime.now(timezone.utc).isoformat()
@@ -134,17 +150,24 @@ async def run_investigation_worker(incident: IncidentRecord):
     Executes the initial graph investigation phase up to human approval.
     Releases concurrency slot while waiting for human approval.
     """
-    incident.add_event("queued", {"incident_id": incident.incident_id, "status": "queued"})
+    incident.add_event("queued", {
+        "incident_id": incident.incident_id,
+        "status": "queued",
+        "mode": incident.mode,
+        "service": incident.service,
+    })
 
     await investigation_limiter.acquire()
     slot_held = True
 
     try:
-        incident.status = "investigating"
+        incident.status = "investigating" if incident.mode != "scan" else "scanning"
         config = {"configurable": {"thread_id": incident.thread_id}}
         initial_state = {
             "incident_text": incident.incident_text,
             "logs": incident.logs,
+            "mode": incident.mode,
+            "service": incident.service,
             "loops": 0,
         }
         loop = asyncio.get_running_loop()
@@ -152,16 +175,54 @@ async def run_investigation_worker(incident: IncidentRecord):
         def sync_investigation():
             for event in graph_app.stream(initial_state, config, stream_mode="updates"):
                 for node_name, update in event.items():
+                    if isinstance(update, dict):
+                        incident.state.update(update)
+                        if "knowledge_draft" in update:
+                            incident.knowledge_draft = update["knowledge_draft"]
+                        if "knowledge_saved" in update:
+                            incident.knowledge_saved = update["knowledge_saved"]
+
                     loop.call_soon_threadsafe(
                         incident.add_event,
                         "agent_step",
                         {"node": node_name, "update": update},
                     )
 
+                    update_dict = update if isinstance(update, dict) else {}
+                    findings = narrate(node_name, update_dict, incident.state)
+                    for item in findings:
+                        loop.call_soon_threadsafe(
+                            incident.add_event,
+                            "finding",
+                            item,
+                        )
+
+                    if isinstance(update, dict) and "knowledge_draft" in update:
+                        draft_payload = {
+                            "service": incident.service or incident.state.get("service") or incident.state.get("triage", {}).get("component") or "application",
+                            "markdown": update["knowledge_draft"],
+                        }
+                        loop.call_soon_threadsafe(
+                            incident.add_event,
+                            "knowledge_draft",
+                            draft_payload,
+                        )
+
+                    if isinstance(update, dict) and "knowledge_saved" in update:
+                        loop.call_soon_threadsafe(
+                            incident.add_event,
+                            "knowledge_saved",
+                            update["knowledge_saved"],
+                        )
+
         await asyncio.to_thread(sync_investigation)
 
         current_state = graph_app.get_state(config)
         incident.state = current_state.values or {}
+        if incident.state.get("knowledge_draft"):
+            incident.knowledge_draft = incident.state.get("knowledge_draft")
+        if incident.state.get("knowledge_saved"):
+            incident.knowledge_saved = incident.state.get("knowledge_saved")
 
         # Check if paused at human_approval interrupt
         if current_state.tasks and any(t.interrupts for t in current_state.tasks):
@@ -178,6 +239,7 @@ async def run_investigation_worker(incident: IncidentRecord):
             incident.add_event("done", {
                 "status": incident.status,
                 "ticket": incident.state.get("ticket"),
+                "knowledge_saved": incident.knowledge_saved,
                 "kb_writeback_result": incident.state.get("kb_writeback_result"),
             })
     except Exception as e:
@@ -217,16 +279,55 @@ async def run_resumption_worker(
         def sync_resumption():
             for event in graph_app.stream(resume_cmd, config, stream_mode="updates"):
                 for node_name, update in event.items():
+                    if isinstance(update, dict):
+                        incident.state.update(update)
+                        if "knowledge_draft" in update:
+                            incident.knowledge_draft = update["knowledge_draft"]
+                        if "knowledge_saved" in update:
+                            incident.knowledge_saved = update["knowledge_saved"]
+
                     loop.call_soon_threadsafe(
                         incident.add_event,
                         "agent_step",
                         {"node": node_name, "update": update},
                     )
 
+                    update_dict = update if isinstance(update, dict) else {}
+                    findings = narrate(node_name, update_dict, incident.state)
+                    for item in findings:
+                        loop.call_soon_threadsafe(
+                            incident.add_event,
+                            "finding",
+                            item,
+                        )
+
+                    if isinstance(update, dict) and "knowledge_draft" in update:
+                        draft_payload = {
+                            "service": incident.service or incident.state.get("service") or incident.state.get("triage", {}).get("component") or "application",
+                            "markdown": update["knowledge_draft"],
+                        }
+                        loop.call_soon_threadsafe(
+                            incident.add_event,
+                            "knowledge_draft",
+                            draft_payload,
+                        )
+
+                    if isinstance(update, dict) and "knowledge_saved" in update:
+                        loop.call_soon_threadsafe(
+                            incident.add_event,
+                            "knowledge_saved",
+                            update["knowledge_saved"],
+                        )
+
         await asyncio.to_thread(sync_resumption)
 
         final_state = graph_app.get_state(config)
         incident.state = final_state.values or {}
+        if incident.state.get("knowledge_draft"):
+            incident.knowledge_draft = incident.state.get("knowledge_draft")
+        if incident.state.get("knowledge_saved"):
+            incident.knowledge_saved = incident.state.get("knowledge_saved")
+
         st = incident.state.get("status", "RESOLVED_AND_TICKETED")
         if not approved or st == "ESCALATED_TO_HUMAN":
             incident.status = "escalated"
@@ -236,6 +337,7 @@ async def run_resumption_worker(
         incident.add_event("done", {
             "status": incident.status,
             "ticket": incident.state.get("ticket"),
+            "knowledge_saved": incident.knowledge_saved,
             "kb_writeback_result": incident.state.get("kb_writeback_result"),
         })
     except Exception as e:
@@ -255,6 +357,8 @@ class CreateIncidentRequest(BaseModel):
     text: Optional[str] = None
     incident_text: Optional[str] = None
     logs: Optional[str] = None
+    mode: Optional[str] = "investigate"
+    service: Optional[str] = None
 
 
 class ApprovalRequest(BaseModel):
@@ -298,13 +402,33 @@ def get_health():
     dependencies=[Depends(verify_api_key)],
 )
 async def create_incident(req: CreateIncidentRequest):
-    """Start an incident investigation asynchronously."""
+    """Start an incident investigation or application scan asynchronously."""
+    mode = (req.mode or "investigate").strip().lower()
+    if mode not in ("investigate", "scan"):
+        raise HTTPException(status_code=400, detail="Mode must be 'investigate' or 'scan'")
+
     text = req.text or req.incident_text
-    if not text or not text.strip():
-        raise HTTPException(status_code=400, detail="Missing required incident text")
+    service = req.service
+
+    if mode == "scan":
+        if not service and text:
+            service = text.strip()
+        if not service:
+            raise HTTPException(status_code=400, detail="Service name is required for scan mode")
+        if not text:
+            text = f"Application scan for {service}"
+    else:
+        if not text or not text.strip():
+            raise HTTPException(status_code=400, detail="Missing required incident text")
 
     incident_id = f"inc-{uuid.uuid4().hex[:8]}"
-    record = IncidentRecord(incident_id=incident_id, incident_text=text.strip(), logs=req.logs)
+    record = IncidentRecord(
+        incident_id=incident_id,
+        incident_text=text.strip(),
+        logs=req.logs,
+        mode=mode,
+        service=service,
+    )
     incidents[incident_id] = record
 
     asyncio.create_task(run_investigation_worker(record))
@@ -312,6 +436,8 @@ async def create_incident(req: CreateIncidentRequest):
     return {
         "incident_id": incident_id,
         "status": "queued",
+        "mode": mode,
+        "service": service,
     }
 
 
@@ -331,6 +457,8 @@ def get_incident(incident_id: str):
     return {
         "incident_id": incident.incident_id,
         "status": incident.status,
+        "mode": incident.mode,
+        "service": incident.service,
         "incident_text": incident.incident_text,
         "created_at": incident.created_at,
         "updated_at": incident.updated_at,
@@ -338,6 +466,8 @@ def get_incident(incident_id: str):
         "plan": incident.state.get("plan"),
         "evidence": incident.state.get("evidence"),
         "review": incident.state.get("review"),
+        "knowledge_draft": incident.knowledge_draft or incident.state.get("knowledge_draft"),
+        "knowledge_saved": incident.knowledge_saved or incident.state.get("knowledge_saved"),
         "pending_approval": incident.pending_approval,
         "policy": policy,
         "ticket": incident.state.get("ticket"),
@@ -453,6 +583,32 @@ def get_single_ticket(ticket_id: str):
     if not ticket:
         raise HTTPException(status_code=404, detail=f"Ticket '{ticket_id}' not found")
     return ticket
+
+
+@app.get("/knowledge", dependencies=[Depends(verify_api_key)])
+def list_knowledge():
+    """List all application knowledge profiles in the knowledge library."""
+    items = []
+    if os.path.exists(APP_KNOWLEDGE_DIR):
+        for fname in sorted(os.listdir(APP_KNOWLEDGE_DIR)):
+            if fname.endswith(".md"):
+                svc = os.path.splitext(fname)[0]
+                doc = get_app_knowledge(svc)
+                if doc.get("exists"):
+                    items.append(doc)
+    return items
+
+
+@app.get("/knowledge/{service}", dependencies=[Depends(verify_api_key)])
+def get_service_knowledge(service: str):
+    """Retrieve full application knowledge document for a service."""
+    doc = get_app_knowledge(service)
+    if not doc.get("exists"):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Knowledge document for service '{service}' not found",
+        )
+    return doc
 
 
 @app.post(

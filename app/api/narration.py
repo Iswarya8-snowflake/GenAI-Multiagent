@@ -228,6 +228,44 @@ def narrate(
         detail = "Escalated incident to human engineering team."
 
     # ==========================================================================
+    # 12. Scan Init
+    # ==========================================================================
+    elif node == "scan_init":
+        title = "Application Scan Initialization"
+        service = delta.get("service") or state.get("service") or "application"
+        detail = f"Initiated application knowledge scan for {service}."
+
+    # ==========================================================================
+    # 13. Search Tickets
+    # ==========================================================================
+    elif node == "search_tickets":
+        title = "Ticket Search"
+        tickets = delta.get("tickets_found") or state.get("tickets_found") or []
+        count = len(tickets)
+        detail = f"Searched ticketing system: found {count} related tickets."
+
+    # ==========================================================================
+    # 14. Knowledge Draft
+    # ==========================================================================
+    elif node == "knowledge_draft":
+        title = "Application Knowledge Draft"
+        service = state.get("service") or state.get("triage", {}).get("component") or "application"
+        detail = f"Generated application knowledge profile draft for {service}."
+
+    # ==========================================================================
+    # 15. Knowledge Save
+    # ==========================================================================
+    elif node == "knowledge_save":
+        title = "Knowledge Base Save"
+        saved = delta.get("knowledge_saved") or state.get("knowledge_saved") or {}
+        v = saved.get("version")
+        p = saved.get("path")
+        if v and p:
+            detail = f"Saved application knowledge profile (v{v}) to {p}."
+        else:
+            detail = "Saved application knowledge profile."
+
+    # ==========================================================================
     # Default Fallback
     # ==========================================================================
     else:
@@ -241,3 +279,4 @@ def narrate(
             "detail": detail,
         }
     ]
+

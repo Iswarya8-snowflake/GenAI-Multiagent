@@ -262,3 +262,4 @@ def merge_known_error(markdown: str, entry: Dict[str, Any]) -> str:
         )
 
     return markdown
+

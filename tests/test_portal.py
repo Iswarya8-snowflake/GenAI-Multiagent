@@ -277,3 +277,4 @@ def test_narration_reviewer():
     # Tool returned nothing
     narr_empty = narrate("reviewer", delta={}, state={})
     assert narr_empty[0]["detail"] == "Grounding review completed."
+

@@ -22,10 +22,16 @@ VALID_API_KEY = "test-secret-key"
 @pytest.fixture(autouse=True)
 def setup_env_and_state(monkeypatch, tmp_path):
     """Set test environment variables and clean state before each test."""
+    import os
     test_db = str(tmp_path / "test_tickets.db")
+    test_know_dir = str(tmp_path / "app_knowledge")
+    os.makedirs(test_know_dir, exist_ok=True)
     monkeypatch.setenv("API_KEY", VALID_API_KEY)
     monkeypatch.setenv("TICKET_DB", test_db)
+    monkeypatch.setenv("APP_KNOWLEDGE_DIR", test_know_dir)
     monkeypatch.setattr("app.mcp_server.tools.tickets.TICKET_DB", test_db)
+    monkeypatch.setattr("app.mcp_server.tools.appknow.APP_KNOWLEDGE_DIR", test_know_dir)
+    monkeypatch.setattr("app.api.main.APP_KNOWLEDGE_DIR", test_know_dir)
 
     # Clear in-memory caches
     incidents.clear()
@@ -373,3 +379,212 @@ def test_run_investigation_worker_releases_slot_on_interrupt():
         assert investigation_limiter._value == 1
 
     asyncio.run(_test())
+
+
+# ==============================================================================
+# 8. Scan Mode & Knowledge Library Tests (Portal Features)
+# ==============================================================================
+
+@patch("app.api.main.run_investigation_worker")
+def test_create_incident_scan_mode(mock_worker):
+    """POST /incidents with mode='scan' creates scan incident."""
+    resp = client.post(
+        "/incidents",
+        json={"mode": "scan", "service": "orders-db"},
+        headers={"X-API-Key": VALID_API_KEY},
+    )
+    assert resp.status_code == 202
+    data = resp.json()
+    assert data["incident_id"].startswith("inc-")
+    assert data["status"] == "queued"
+    assert data["mode"] == "scan"
+    assert data["service"] == "orders-db"
+
+    # Also test GET /incidents/{id} reflects scan mode and service
+    inc_resp = client.get(f"/incidents/{data['incident_id']}", headers={"X-API-Key": VALID_API_KEY})
+    assert inc_resp.status_code == 200
+    inc_data = inc_resp.json()
+    assert inc_data["mode"] == "scan"
+    assert inc_data["service"] == "orders-db"
+
+
+def test_create_incident_invalid_mode():
+    """POST /incidents with invalid mode returns 400."""
+    resp = client.post(
+        "/incidents",
+        json={"mode": "invalid_mode", "text": "something"},
+        headers={"X-API-Key": VALID_API_KEY},
+    )
+    assert resp.status_code == 400
+    assert "Mode must be 'investigate' or 'scan'" in resp.json()["detail"]
+
+
+def test_create_incident_scan_missing_service():
+    """POST /incidents with mode='scan' and no service returns 400."""
+    resp = client.post(
+        "/incidents",
+        json={"mode": "scan"},
+        headers={"X-API-Key": VALID_API_KEY},
+    )
+    assert resp.status_code == 400
+    assert "Service name is required for scan mode" in resp.json()["detail"]
+
+
+def test_get_incident_includes_knowledge_fields():
+    """GET /incidents/{id} includes knowledge_draft and knowledge_saved."""
+    inc_id = "inc-know-test"
+    record = IncidentRecord(
+        incident_id=inc_id,
+        incident_text="orders-db scan",
+        mode="scan",
+        service="orders-db",
+    )
+    record.knowledge_draft = "# Application Knowledge: orders-db\n- Version: 1"
+    record.knowledge_saved = {"path": "data/app_knowledge/orders-db.md", "version": 1, "updated": "2026-10-07"}
+    incidents[inc_id] = record
+
+    resp = client.get(f"/incidents/{inc_id}", headers={"X-API-Key": VALID_API_KEY})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["mode"] == "scan"
+    assert data["service"] == "orders-db"
+    assert "Application Knowledge: orders-db" in data["knowledge_draft"]
+    assert data["knowledge_saved"]["version"] == 1
+
+
+def test_knowledge_library_endpoints(tmp_path):
+    """GET /knowledge and GET /knowledge/{service} return profiles and enforce auth."""
+    # 1. Unauthenticated request rejected with 401
+    resp_unauth = client.get("/knowledge")
+    assert resp_unauth.status_code == 401
+
+    resp_svc_unauth = client.get("/knowledge/orders-db")
+    assert resp_svc_unauth.status_code == 401
+
+    # 2. Unknown service returns 404
+    resp_404 = client.get("/knowledge/nonexistent-svc", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_404.status_code == 404
+
+    # 3. Create a knowledge file in test directory
+    know_dir = tmp_path / "app_knowledge"
+    import os
+    os.makedirs(know_dir, exist_ok=True)
+    doc_content = "# Application Knowledge: orders-db\n- Version: 2\n- Updated: 2026-10-07\n\n## Overview\nCore DB"
+    (know_dir / "orders-db.md").write_text(doc_content, encoding="utf-8")
+
+    # 4. GET /knowledge lists it
+    resp_list = client.get("/knowledge", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_list.status_code == 200
+    items = resp_list.json()
+    assert len(items) == 1
+    assert items[0]["service"] == "orders-db"
+    assert items[0]["version"] == 2
+
+    # 5. GET /knowledge/{service} retrieves it
+    resp_get = client.get("/knowledge/orders-db", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_get.status_code == 200
+    doc = resp_get.json()
+    assert doc["service"] == "orders-db"
+    assert doc["version"] == 2
+    assert "Core DB" in doc["markdown"]
+
+
+def test_incident_events_sse_findings_and_knowledge():
+    """GET /incidents/{id}/events streams finding, knowledge_draft, and knowledge_saved SSE events."""
+    inc_id = "inc-sse-events"
+    record = IncidentRecord(incident_id=inc_id, incident_text="Scan orders-db", mode="scan", service="orders-db")
+    record.add_event("queued", {"status": "queued"})
+    record.add_event("finding", {
+        "stage": "log_analysis",
+        "status": "completed",
+        "title": "Log Analysis",
+        "detail": "I checked the application logs: 5 errors; most frequent: DB-1205",
+    })
+    record.add_event("knowledge_draft", {
+        "service": "orders-db",
+        "markdown": "# Application Knowledge: orders-db",
+    })
+    record.add_event("knowledge_saved", {
+        "path": "data/app_knowledge/orders-db.md",
+        "version": 1,
+        "updated": "2026-10-07",
+    })
+    record.add_event("done", {"status": "resolved"})
+    incidents[inc_id] = record
+
+    resp = client.get(
+        f"/incidents/{inc_id}/events",
+        headers={"X-API-Key": VALID_API_KEY},
+    )
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.headers["content-type"]
+    content = resp.text
+    assert "event: queued" in content
+    assert "event: finding" in content
+    assert "I checked the application logs: 5 errors" in content
+    assert "event: knowledge_draft" in content
+    assert "Application Knowledge: orders-db" in content
+    assert "event: knowledge_saved" in content
+    assert "data/app_knowledge/orders-db.md" in content
+    assert "event: done" in content
+
+
+def test_worker_emits_narration_findings_and_draft():
+    """run_investigation_worker streams graph updates and emits finding + knowledge_draft events."""
+    async def _test():
+        record = IncidentRecord(
+            incident_id="inc-worker-findings",
+            incident_text="orders-db deadlock",
+            mode="scan",
+            service="orders-db",
+        )
+
+        stream_updates = [
+            {"scan_init": {"service": "orders-db"}},
+            {
+                "log_analysis": {
+                    "log_findings": {
+                        "stats": {
+                            "error_count": 3,
+                            "first_error_time": "10:00:00",
+                            "last_error_time": "10:05:00",
+                            "error_codes": ["DB-1205"],
+                        }
+                    }
+                }
+            },
+            {
+                "knowledge_draft": {
+                    "knowledge_draft": "# Draft Knowledge for orders-db"
+                }
+            },
+        ]
+
+        mock_task = MagicMock()
+        mock_task.interrupts = [MagicMock(value={"policy": {"level": "standard"}, "plan": {}})]
+        mock_state = MagicMock()
+        mock_state.tasks = [mock_task]
+        mock_state.values = {"knowledge_draft": "# Draft Knowledge for orders-db"}
+
+        with patch("app.api.main.graph_app.stream", return_value=stream_updates), \
+             patch("app.api.main.graph_app.get_state", return_value=mock_state):
+            await run_investigation_worker(record)
+
+        event_names = [e["event"] for e in record.event_history]
+        assert "queued" in event_names
+        assert "finding" in event_names
+        assert "knowledge_draft" in event_names
+        assert "approval_required" in event_names
+
+        # Check finding details
+        finding_events = [e["data"] for e in record.event_history if e["event"] == "finding"]
+        assert any("Initiated application knowledge scan" in f.get("detail", "") for f in finding_events)
+        assert any("I checked the application logs: 3 errors" in f.get("detail", "") for f in finding_events)
+
+        # Check knowledge_draft event
+        draft_event = next(e["data"] for e in record.event_history if e["event"] == "knowledge_draft")
+        assert draft_event["service"] == "orders-db"
+        assert "# Draft Knowledge for orders-db" in draft_event["markdown"]
+
+    asyncio.run(_test())
+
