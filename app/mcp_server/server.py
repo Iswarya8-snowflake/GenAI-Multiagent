@@ -14,7 +14,7 @@ try:
 except ImportError:
     from mcp.server.fastmcp import FastMCP
 
-from app.mcp_server.tools import safety, logs, wiki, tickets, live, kb
+from app.mcp_server.tools import safety, logs, wiki, tickets, live, kb, appknow
 
 load_dotenv()
 
@@ -73,6 +73,42 @@ def kb_upsert(text: str, metadata: Dict[str, Any], approval_id: str) -> Dict[str
     # Enforce approval gate
     tickets.require_approval(approval_id)
     return kb.kb_upsert(text=text, metadata=metadata)
+
+
+# ==============================================================================
+# Application Knowledge Tools
+# ==============================================================================
+
+@mcp.tool()
+def get_app_knowledge(service: str) -> Dict[str, Any]:
+    """
+    Retrieve application knowledge document, version, and metadata for a service.
+
+    Args:
+        service: Service identifier ('calc-engine', 'orders-db', 'msg-queue', 'feed-gateway').
+
+    Returns:
+        Dict containing service name, path, markdown content, version, updated date, and exists flag.
+    """
+    return appknow.get_app_knowledge(service=service)
+
+
+@mcp.tool()
+def save_app_knowledge(service: str, markdown: str, approval_id: str) -> Dict[str, Any]:
+    """
+    Save approved application knowledge document for a service.
+    Requires an approved approval_id. Archives the previous version to history
+    and indexes the document chunks into the knowledge base.
+
+    Args:
+        service: Service identifier ('calc-engine', 'orders-db', 'msg-queue', 'feed-gateway').
+        markdown: Full markdown document content.
+        approval_id: Validated human approval ID.
+
+    Returns:
+        Dict containing path, version number, and updated timestamp.
+    """
+    return appknow.save_app_knowledge(service=service, markdown=markdown, approval_id=approval_id)
 
 
 # ==============================================================================

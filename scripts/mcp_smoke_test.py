@@ -26,11 +26,12 @@ async def run_smoke_test():
     print(f"CONNECTING TO MCP SERVER AT: {MCP_URL}")
     print(f"{'='*75}\n")
 
-    async with streamable_http_client(MCP_URL) as (read_stream, write_stream):
+    async with streamable_http_client(MCP_URL) as (read_stream, write_stream, *_):
         async with ClientSession(read_stream, write_stream) as session:
             # Initialize session
             init_res = await session.initialize()
-            print(f"[1] Session Initialized successfully! Protocol version: {init_res.protocol_version}")
+            pv = getattr(init_res, "protocolVersion", getattr(init_res, "protocol_version", "unknown"))
+            print(f"[1] Session Initialized successfully! Protocol version: {pv}")
 
             # 1. List tools
             tool_list = await session.list_tools()
@@ -45,12 +46,13 @@ async def run_smoke_test():
                 "get_active_alerts", "get_service_health", "get_metrics", "tail_log",
                 "search_tickets", "get_ticket", "suggest_owner", "redact_text",
                 "search_web", "fetch_page", "create_ticket", "update_ticket", "kb_upsert",
+                "get_app_knowledge", "save_app_knowledge",
             }
             missing = expected_tools - set(tool_names)
             if missing:
                 print(f"    [WARNING] Missing expected tools: {missing}")
             else:
-                print("    [PASS] All 17 tools listed in PROJECT_SPEC.md are registered!")
+                print("    [PASS] All 19 tools listed in PROJECT_SPEC.md are registered!")
 
             # 2. Call get_active_alerts
             print("\n[3] Calling Tool: get_active_alerts...")

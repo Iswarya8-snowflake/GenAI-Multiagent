@@ -7,6 +7,13 @@ from typing import Any, Dict, List, Optional
 
 SERVICES = ["orders-db", "msg-queue", "feed-gateway", "calc-engine"]
 
+DEPENDENCY_MAP = {
+    "calc-engine": ["orders-db", "msg-queue"],
+    "feed-gateway": ["msg-queue"],
+    "orders-db": [],
+    "msg-queue": [],
+}
+
 SCENARIOS = {
     "db_lock": {
         "service": "orders-db",
@@ -126,6 +133,10 @@ class SimulationEngine:
             "as_of": self._as_of(),
         }
 
+    def health(self, service: str) -> Dict[str, Any]:
+        """Return health status, dependencies, and used_by for a service."""
+        return self.get_service_health(service)
+
     def get_service_health(self, service: str) -> Dict[str, Any]:
         if service not in SERVICES:
             raise ValueError(f"Unknown service '{service}'")
@@ -138,9 +149,14 @@ class SimulationEngine:
         else:
             status = "HEALTHY"
 
+        depends_on = list(DEPENDENCY_MAP.get(service, []))
+        used_by = [s for s, deps in DEPENDENCY_MAP.items() if service in deps]
+
         return {
             "service": service,
             "status": status,
+            "depends_on": depends_on,
+            "used_by": used_by,
             "as_of": self._as_of(),
         }
 
@@ -204,4 +220,9 @@ class SimulationEngine:
 
 # Global simulator engine instance
 engine = SimulationEngine()
+
+
+def health(service: str) -> Dict[str, Any]:
+    """Module-level helper to get health, dependencies, and used_by for a service."""
+    return engine.get_service_health(service)
 

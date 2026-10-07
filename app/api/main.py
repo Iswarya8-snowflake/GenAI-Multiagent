@@ -499,3 +499,4 @@ async def alert_webhook(alert: WebhookAlertRequest, response: Response):
         "incident_id": incident_id,
         "status": "queued",
     }
+
