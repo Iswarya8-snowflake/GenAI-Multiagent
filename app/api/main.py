@@ -601,15 +601,87 @@ def list_knowledge():
 
 
 @app.get("/knowledge/{service}", dependencies=[Depends(verify_api_key)])
-def get_service_knowledge(service: str):
-    """Retrieve full application knowledge document for a service."""
+def get_service_knowledge(service: str, version: Optional[int] = None):
+    """Retrieve application knowledge document for a service, optionally by version."""
+    import re
+    dir_path = APP_KNOWLEDGE_DIR
+    history_dir = os.path.join(dir_path, "history")
+
+    history_versions = []
+    if os.path.exists(history_dir):
+        for fn in sorted(os.listdir(history_dir)):
+            m = re.match(rf"^{re.escape(service)}_v(\d+)\.md$", fn)
+            if m:
+                history_versions.append(int(m.group(1)))
+
+    if version is not None:
+        hist_file = os.path.join(history_dir, f"{service}_v{version}.md")
+        if not os.path.exists(hist_file):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Version {version} for service '{service}' not found",
+            )
+        with open(hist_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        from app.mcp_server.tools.appknow import _extract_version, _extract_updated
+        return {
+            "service": service,
+            "path": hist_file,
+            "markdown": content,
+            "version": _extract_version(content),
+            "updated": _extract_updated(content),
+            "exists": True,
+            "history_versions": history_versions,
+        }
+
     doc = get_app_knowledge(service)
     if not doc.get("exists"):
         raise HTTPException(
             status_code=404,
             detail=f"Knowledge document for service '{service}' not found",
         )
+    doc["history_versions"] = history_versions
     return doc
+
+
+@app.get("/monitoring/health", dependencies=[Depends(verify_api_key)])
+async def get_monitoring_health():
+    """Proxy monitoring health check from simulator."""
+    monitoring_url = os.getenv("MONITORING_URL", "http://127.0.0.1:8001")
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(f"{monitoring_url}/services/health", timeout=5.0)
+            return resp.json()
+        except Exception:
+            from app.sim.engine import engine
+            return engine.get_all_health()
+
+
+@app.get("/monitoring/alerts", dependencies=[Depends(verify_api_key)])
+async def get_monitoring_alerts():
+    """Proxy active alerts from simulator."""
+    monitoring_url = os.getenv("MONITORING_URL", "http://127.0.0.1:8001")
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(f"{monitoring_url}/alerts", timeout=5.0)
+            return resp.json()
+        except Exception:
+            from app.sim.engine import engine
+            return engine.get_alerts()
+
+
+@app.get("/monitoring/metrics", dependencies=[Depends(verify_api_key)])
+async def get_monitoring_metrics():
+    """Proxy service metrics from simulator."""
+    monitoring_url = os.getenv("MONITORING_URL", "http://127.0.0.1:8001")
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(f"{monitoring_url}/metrics", timeout=5.0)
+            return resp.json()
+        except Exception:
+            from app.sim.engine import engine
+            return engine.get_all_metrics()
 
 
 @app.post(

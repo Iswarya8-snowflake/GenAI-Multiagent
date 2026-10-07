@@ -361,6 +361,30 @@ def test_trigger_scenario_proxy(mock_post):
     assert resp_unauth.status_code == 401
 
 
+def test_monitoring_proxy_endpoints():
+    """GET /monitoring/health, /monitoring/alerts, and /monitoring/metrics return monitoring state."""
+    # Health
+    resp_health = client.get("/monitoring/health", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_health.status_code == 200
+    assert "services" in resp_health.json()
+
+    # Alerts
+    resp_alerts = client.get("/monitoring/alerts", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_alerts.status_code == 200
+    assert "alerts" in resp_alerts.json()
+
+    # Metrics
+    resp_metrics = client.get("/monitoring/metrics", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_metrics.status_code == 200
+    assert "services" in resp_metrics.json()
+
+    # Unauthenticated rejected
+    assert client.get("/monitoring/health").status_code == 401
+    assert client.get("/monitoring/alerts").status_code == 401
+    assert client.get("/monitoring/metrics").status_code == 401
+
+
+
 # ==============================================================================
 # 7. Semaphore Slot Release Test
 # ==============================================================================
@@ -504,6 +528,22 @@ def test_knowledge_library_endpoints(tmp_path):
     assert doc["service"] == "orders-db"
     assert doc["version"] == 2
     assert "Core DB" in doc["markdown"]
+
+    # 6. Test historical version retrieval
+    hist_dir = know_dir / "history"
+    os.makedirs(hist_dir, exist_ok=True)
+    hist_content = "# Application Knowledge: orders-db\n- Version: 1\n- Updated: 2026-10-06\n\n## Overview\nOld v1 DB"
+    (hist_dir / "orders-db_v1.md").write_text(hist_content, encoding="utf-8")
+
+    resp_v1 = client.get("/knowledge/orders-db?version=1", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_v1.status_code == 200
+    doc_v1 = resp_v1.json()
+    assert doc_v1["version"] == 1
+    assert "Old v1 DB" in doc_v1["markdown"]
+
+    # Unknown version returns 404
+    resp_v99 = client.get("/knowledge/orders-db?version=99", headers={"X-API-Key": VALID_API_KEY})
+    assert resp_v99.status_code == 404
 
 
 def test_incident_events_sse_findings_and_knowledge():
