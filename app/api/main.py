@@ -15,6 +15,7 @@ import json
 import os
 import time
 import uuid
+import httpx
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -655,4 +656,21 @@ async def alert_webhook(alert: WebhookAlertRequest, response: Response):
         "incident_id": incident_id,
         "status": "queued",
     }
+
+
+@app.post("/scenario/{scenario_name}", dependencies=[Depends(verify_api_key)])
+async def trigger_scenario(scenario_name: str):
+    """Trigger simulator scenario via monitoring simulator."""
+    monitoring_url = os.getenv("MONITORING_URL", "http://127.0.0.1:8001")
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(f"{monitoring_url}/scenario/{scenario_name}")
+            if resp.status_code >= 400:
+                raise HTTPException(status_code=resp.status_code, detail=resp.text)
+            return resp.json()
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Failed to reach simulator: {e}")
+
 

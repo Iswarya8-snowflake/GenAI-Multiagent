@@ -13,3 +13,4 @@ pytest
 python-dotenv
 uvicorn
 sse-starlette
+streamlit

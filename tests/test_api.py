@@ -344,6 +344,23 @@ def test_alerts_webhook_deduplication(mock_worker):
     assert data3["incident_id"] != inc_id
 
 
+@patch("httpx.AsyncClient.post")
+def test_trigger_scenario_proxy(mock_post):
+    """POST /scenario/{scenario_name} proxies scenario injection to simulator."""
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"status": "started", "scenario": "db_lock", "message": "Injected db_lock"}
+    mock_post.return_value = mock_resp
+
+    resp = client.post("/scenario/db_lock", headers={"X-API-Key": VALID_API_KEY})
+    assert resp.status_code == 200
+    assert resp.json()["scenario"] == "db_lock"
+
+    # Test unauthenticated request rejected
+    resp_unauth = client.post("/scenario/db_lock")
+    assert resp_unauth.status_code == 401
+
+
 # ==============================================================================
 # 7. Semaphore Slot Release Test
 # ==============================================================================
