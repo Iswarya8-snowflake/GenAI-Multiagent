@@ -1,0 +1,376 @@
+{
+  "total_cases": 15,
+  "retrieval_hits": 15,
+  "retrieval_hit_rate_percent": 100.0,
+  "grounding_passes": 13,
+  "grounding_pass_rate_percent": 86.67,
+  "average_time_seconds": 79.23,
+  "min_time_seconds": 45.33,
+  "max_time_seconds": 143.16,
+  "total_time_seconds": 1188.47,
+  "details": [
+    {
+      "id": "TEST-01",
+      "question": "Orders database is throwing lock wait timeout errors during customer checkout transactions. What is the cause and resolution?",
+      "expected_category": "db-lock",
+      "expected_error_code": "DB-1205",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "orders-db",
+        "summary": "Lock wait timeout errors during customer checkout transactions in orders database"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-2 (db-lock)",
+        "kb-3 (system)"
+      ],
+      "planner_confidence": 0.9,
+      "claims_count": 3,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 86.65
+    },
+    {
+      "id": "TEST-02",
+      "question": "Service orders-db reported DB-1205 with transactions hanging on row locks. How should we triage this?",
+      "expected_category": "db-lock",
+      "expected_error_code": "DB-1205",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "orders-db",
+        "summary": "Transactions hanging on row locks due to DB-1205 error (P1 severity)"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (db-lock)",
+        "kb-2 (system)",
+        "kb-3 (system)"
+      ],
+      "planner_confidence": 0.9,
+      "claims_count": 1,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 56.05
+    },
+    {
+      "id": "TEST-03",
+      "question": "Database write queries are failing on orders-db due to uncommitted long-running sessions holding row locks. What steps should be taken?",
+      "expected_category": "db-lock",
+      "expected_error_code": "DB-1205",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "orders-db",
+        "summary": "Database write queries failing due to uncommitted long-running sessions holding row locks"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (db-lock)",
+        "kb-2 (system)",
+        "kb-3 (system)"
+      ],
+      "planner_confidence": 0.9,
+      "claims_count": 3,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 55.25
+    },
+    {
+      "id": "TEST-04",
+      "question": "Deadlock cycle on inventory table causing DB-1205 lock wait exceeded on orders-db. How to resolve?",
+      "expected_category": "db-lock",
+      "expected_error_code": "DB-1205",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "orders-db",
+        "summary": "Deadlock cycle on inventory table causing DB-1205 lock wait exceeded error message. How to resolve? (P2)"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (system)",
+        "kb-2 (db-lock)",
+        "kb-3 (system)"
+      ],
+      "planner_confidence": 0.9,
+      "claims_count": 3,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 49.33
+    },
+    {
+      "id": "TEST-05",
+      "question": "Message queue consumer lag exceeded threshold on orders.inbound topic with alert MQ-2041. What is the fix?",
+      "expected_category": "queue-backlog",
+      "expected_error_code": "MQ-2041",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "msg-queue",
+        "summary": "Message queue consumer lag exceeded threshold on orders.inbound topic with alert MQ-2041. What is the fix? "
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (queue-backlog)",
+        "kb-2 (queue-backlog)",
+        "kb-3 (queue-backlog)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 13,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 118.56
+    },
+    {
+      "id": "TEST-06",
+      "question": "Service msg-queue is reporting MQ-2041 and downstream consumers have crashed. How do we recover?",
+      "expected_category": "queue-backlog",
+      "expected_error_code": "MQ-2041",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "msg-queue",
+        "summary": "MQ-2041 error causing downstream consumers to crash, recovery needed ASAP"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (queue-backlog)",
+        "kb-2 (queue-backlog)",
+        "kb-3 (queue-backlog)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 4,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 69.82
+    },
+    {
+      "id": "TEST-07",
+      "question": "A massive spike in unprocessed events on msg-queue caused severe consumer delay and MQ-2041 warning. What actions to take?",
+      "expected_category": "queue-backlog",
+      "expected_error_code": "MQ-2041",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "msg-queue",
+        "summary": "Massive spike in unprocessed events causing consumer delay and MQ-2041 warning. Actions needed to resolve the issue and prevent future occurrences are required immediately. Severity: P1"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (queue-backlog)",
+        "kb-2 (queue-backlog)",
+        "kb-3 (queue-backlog)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 3,
+      "grounding_passed": false,
+      "grounding_issues": [
+        "Claim 3 has low evidence word overlap (0.00 < 0.30): 'The resolution plan involves enabling asynchronous SMS dispa...'"
+      ],
+      "time_seconds": 102.24
+    },
+    {
+      "id": "TEST-08",
+      "question": "Poison message stuck on partition 2 causing consumer crash loops and MQ-2041 lag. How to handle this?",
+      "expected_category": "queue-backlog",
+      "expected_error_code": "MQ-2041",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "msg-queue",
+        "summary": "Poison message stuck on partition 2 causing consumer crash loops and MQ-2041 lag. How to handle this?"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (queue-backlog)",
+        "kb-2 (queue-backlog)",
+        "kb-3 (queue-backlog)"
+      ],
+      "planner_confidence": 0.8,
+      "claims_count": 0,
+      "grounding_passed": false,
+      "grounding_issues": [
+        "Plan contains no claims with citations."
+      ],
+      "time_seconds": 116.74
+    },
+    {
+      "id": "TEST-09",
+      "question": "Inbound API gateway feed-gateway is responding with HTTP 503 and reporting FEED-7002 thread pool saturated. How should we mitigate?",
+      "expected_category": "cpu-spike",
+      "expected_error_code": "FEED-7002",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "feed-gateway",
+        "summary": "Feed Gateway API Response Error - HTTP 503 and FEED-7002 Thread Pool Saturated"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (cpu-spike)",
+        "kb-2 (cpu-spike)",
+        "kb-3 (cpu-spike)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 6,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 143.16
+    },
+    {
+      "id": "TEST-10",
+      "question": "Service feed-gateway CPU utilization reached 100% and logged FEED-7002 error. What are the diagnosis and remediation steps?",
+      "expected_category": "cpu-spike",
+      "expected_error_code": "FEED-7002",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "feed-gateway",
+        "summary": "Feed Gateway CPU Utilization at 100% and FEED-7002 Error Logged"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (cpu-spike)",
+        "kb-2 (cpu-spike)",
+        "kb-3 (cpu-spike)"
+      ],
+      "planner_confidence": 0.9,
+      "claims_count": 4,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 52.02
+    },
+    {
+      "id": "TEST-11",
+      "question": "Worker threads exhausted on feed-gateway causing request drops and FEED-7002 errors. How to restore service?",
+      "expected_category": "cpu-spike",
+      "expected_error_code": "FEED-7002",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "feed-gateway",
+        "summary": "Worker threads exhausted, causing request drops and FEED-7002 errors, impacting service restoration."
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (cpu-spike)",
+        "kb-2 (cpu-spike)",
+        "kb-3 (cpu-spike)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 8,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 83.78
+    },
+    {
+      "id": "TEST-12",
+      "question": "High connection churn on feed-gateway triggered FEED-7002 thread starvation alert. What is the recommended resolution?",
+      "expected_category": "cpu-spike",
+      "expected_error_code": "FEED-7002",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "feed-gateway",
+        "summary": "High connection churn on feed-gateway triggered FEED-7002 thread starvation alert"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (cpu-spike)",
+        "kb-2 (cpu-spike)",
+        "kb-3 (cpu-spike)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 7,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 68.69
+    },
+    {
+      "id": "TEST-13",
+      "question": "End of day calculation job aborted on calc-engine with error JOB-5003. How to diagnose and re-run?",
+      "expected_category": "batch-failure",
+      "expected_error_code": "JOB-5003",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "calc-engine",
+        "summary": "End of day calculation job aborted with error JOB-5003. How to diagnose and re-run?"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (batch-failure)",
+        "kb-2 (batch-failure)",
+        "kb-3 (batch-failure)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 7,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 68.25
+    },
+    {
+      "id": "TEST-14",
+      "question": "Service calc-engine raised JOB-5003 calculation batch failure on batch 4091. What caused this failure?",
+      "expected_category": "batch-failure",
+      "expected_error_code": "JOB-5003",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "calc-engine",
+        "summary": "Calculation batch failure with JOB-5003 on batch 4091"
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (batch-failure)",
+        "kb-2 (batch-failure)",
+        "kb-3 (batch-failure)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 7,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 72.61
+    },
+    {
+      "id": "TEST-15",
+      "question": "Scheduled settlement batch failed with JOB-5003 in calc-engine due to data validation error. What is the fix?",
+      "expected_category": "batch-failure",
+      "expected_error_code": "JOB-5003",
+      "triage": {
+        "severity": "P2",
+        "category": "system",
+        "component": "calc-engine",
+        "summary": "Scheduled settlement batch failed due to data validation error in calc-engine (JOB-5003)."
+      },
+      "retrieval_hit": true,
+      "retrieved_docs_count": 3,
+      "hit_docs": [
+        "kb-1 (batch-failure)",
+        "kb-2 (batch-failure)",
+        "kb-3 (batch-failure)"
+      ],
+      "planner_confidence": 0.85,
+      "claims_count": 4,
+      "grounding_passed": true,
+      "grounding_issues": [],
+      "time_seconds": 45.33
+    }
+  ]
+}
