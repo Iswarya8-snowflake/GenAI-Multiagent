@@ -119,3 +119,4 @@ def kb_upsert(
         "status": "upserted",
         "metadata": metadata,
     }
+

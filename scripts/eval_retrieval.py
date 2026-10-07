@@ -73,3 +73,4 @@ def evaluate_retrieval(test_set_path: str = "eval/test_set.json", k: int = 3):
 
 if __name__ == "__main__":
     evaluate_retrieval()
+
