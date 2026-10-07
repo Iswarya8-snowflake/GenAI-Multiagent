@@ -53,6 +53,8 @@ A multi-agent copilot that triages L3 support incidents using RAG over runbooks,
   3. **Knowledge Library**: Document registry with version and updated date, markdown viewer, download button, and historical version picker (`data/app_knowledge/history`).
   4. **Tickets**: Ticket search and filtering by status.
   5. **About**: Architectural diagrams, synthetic services, error codes, grounding and approval policy documentation.
+- Added 1-click "Load demo scenario" button to Investigate page injecting `db_lock` scenario in simulator, populating sample error report and logs, and launching investigation automatically.
+- Enhanced layout for screenshot presentation: wide mode layout, styled top banner title bar displaying project name (`L3 Incident Triage Copilot`), and persistent footer with synthetic data and simulated monitoring disclaimer across all portal pages.
 
 
 

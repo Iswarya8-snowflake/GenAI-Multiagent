@@ -349,6 +349,39 @@ def render_health_pill(status: str) -> str:
     return f"<span class='health-badge {css_class}'>{icon} {st_upper}</span>"
 
 
+def render_title_bar():
+    """Render a screenshot-friendly title bar with the project name."""
+    st.markdown(
+        """
+        <div style="background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%); padding: 14px 22px; border-radius: 8px; margin-bottom: 22px; color: #ffffff; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #3b82f6; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 28px;">🚨</span>
+                <div>
+                    <div style="font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">L3 Incident Triage Copilot</div>
+                    <div style="font-size: 13px; color: #94a3b8;">Autonomous Multi-Agent Triage, Evidence Grounding & Resolution Portal</div>
+                </div>
+            </div>
+            <div style="font-size: 11px; background: rgba(59,130,246,0.25); color: #93c5fd; padding: 5px 12px; border-radius: 12px; font-weight: 600; letter-spacing: 0.5px; border: 1px solid rgba(59,130,246,0.4);">
+                PROJECT_SPEC PORTAL
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_footer():
+    """Render persistent footer stating synthetic data disclaimer."""
+    st.markdown(
+        """
+        <div style="margin-top: 50px; padding: 16px 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b; background-color: #f8fafc; border-radius: 6px;">
+            🔒 <strong>Disclaimer</strong>: All data is synthetic and the monitoring feed is simulated.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ==============================================================================
 # Session State Initialization
 # ==============================================================================
@@ -418,6 +451,7 @@ def render_sidebar():
 # ==============================================================================
 
 def page_investigate():
+    render_title_bar()
     st.title("🚨 L3 Incident Investigation & Triage")
     st.caption("Automated diagnosis, live system inspection, evidence grounding, and human-in-the-loop resolution.")
 
@@ -452,7 +486,40 @@ def page_investigate():
             st.info("💡 **Scan Mode** collects live dependencies, metrics, error signatures, and ticket history without an active outage.")
             uploaded_log = None
 
-    if st.button("🔍 Analyse", type="primary"):
+    # Actions: Analyse and 1-Click Load demo scenario
+    col_act1, col_act2, col_act3 = st.columns([1, 1.4, 2])
+    with col_act1:
+        analyse_btn = st.button("🔍 Analyse", type="primary", use_container_width=True)
+    with col_act2:
+        demo_btn = st.button("⚡ Load demo scenario", use_container_width=True, help="Injects db_lock scenario into simulator, fills sample error report, and starts investigation in 1 click")
+
+    if demo_btn:
+        with st.spinner("Injecting demo scenario 'db_lock' into simulator and starting investigation..."):
+            inject_scenario("db_lock")
+            demo_text = "orders-db lock wait timeout reported with error code DB-1205: Lock wait timeout exceeded; try restarting transaction while executing checkout batch"
+            demo_logs = (
+                "2026-10-07 10:00:15 WARN orders-db - Elevated query latency threshold exceeded\n"
+                "2026-10-07 10:00:16 ERROR orders-db - [DB-1205] Lock wait timeout exceeded; try restarting transaction\n"
+                "2026-10-07 10:00:17 INFO orders-db - Worker connection pool blocked on transaction lock"
+            )
+            ok, res = post_incident(
+                text=demo_text,
+                logs=demo_logs,
+                mode="investigate",
+                service="orders-db",
+            )
+            if ok:
+                st.session_state.active_incident_id = res["incident_id"]
+                st.session_state.incident_data = None
+                st.session_state.findings_log = []
+                st.session_state.live_as_of = None
+                st.session_state.edit_mode = False
+                st.success("Loaded demo scenario 'db_lock' and initiated investigation!")
+                st.rerun()
+            else:
+                st.error(f"Failed to start demo investigation: {res}")
+
+    elif analyse_btn:
         if not inc_text.strip():
             st.error("Please provide an incident description or select a service.")
         else:
@@ -480,6 +547,7 @@ def page_investigate():
     # Active Investigation Workspace
     active_id = st.session_state.active_incident_id
     if not active_id:
+        render_footer()
         return
 
     st.markdown("---")
@@ -698,12 +766,15 @@ def page_investigate():
     elif st_val == "escalated":
         st.error("🚨 **Incident Escalated to Human Engineering Team**")
 
+    render_footer()
+
 
 # ==============================================================================
 # Page 2: Live Monitor
 # ==============================================================================
 
 def page_live_monitor():
+    render_title_bar()
     st.title("🩺 Live System Monitoring")
     st.caption("Live health cards, active alerts, and dependency metrics from the monitoring simulator.")
 
@@ -778,12 +849,15 @@ def page_live_monitor():
     else:
         st.info("Metrics updating...")
 
+    render_footer()
+
 
 # ==============================================================================
 # Page 3: Knowledge Library
 # ==============================================================================
 
 def page_knowledge_library():
+    render_title_bar()
     st.title("📚 Application Knowledge Library")
     st.caption("Audited application architecture, dependencies, known errors, runbooks, and historical versions.")
 
@@ -793,6 +867,7 @@ def page_knowledge_library():
     profiles = fetch_knowledge_profiles()
     if not profiles:
         st.info("No saved knowledge profiles found yet. Run an investigation or application scan to generate profiles.")
+        render_footer()
         return
 
     services_available = [p.get("service") for p in profiles if p.get("service")]
@@ -809,12 +884,14 @@ def page_knowledge_library():
     )
 
     if not selected_service:
+        render_footer()
         return
 
     # Fetch document metadata and versions
     doc_meta = fetch_service_knowledge(selected_service)
     if not doc_meta:
         st.error(f"Failed to load document for `{selected_service}`.")
+        render_footer()
         return
 
     curr_version = doc_meta.get("version", 1)
@@ -849,6 +926,7 @@ def page_knowledge_library():
 
     st.markdown("---")
     st.markdown(picked_doc.get("markdown", "*No markdown content*"))
+    render_footer()
 
 
 # ==============================================================================
@@ -856,6 +934,7 @@ def page_knowledge_library():
 # ==============================================================================
 
 def page_tickets():
+    render_title_bar()
     st.title("🎫 Support Ticketing System")
     st.caption("Search, filter, and inspect incident resolution tickets persisted in SQLite.")
 
@@ -871,6 +950,7 @@ def page_tickets():
 
     if not tickets:
         st.info("No tickets match the query criteria.")
+        render_footer()
         return
 
     for t in tickets:
@@ -896,12 +976,15 @@ def page_tickets():
             st.text(t.get("description", ""))
             st.markdown("---")
 
+    render_footer()
+
 
 # ==============================================================================
 # Page 5: About
 # ==============================================================================
 
 def page_about():
+    render_title_bar()
     st.title("ℹ️ About L3 Incident Copilot")
     st.markdown(
         """
@@ -926,6 +1009,7 @@ def page_about():
         - **Strict Policy**: Enforces human verification of evidence citations for P1/P2 incidents, low confidence (<0.7), web sources, or retried reviews.
         """
     )
+    render_footer()
 
 
 # ==============================================================================
